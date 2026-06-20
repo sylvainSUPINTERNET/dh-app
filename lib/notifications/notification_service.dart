@@ -1,0 +1,48 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+final _localNotifications = FlutterLocalNotificationsPlugin();
+
+const _channel = AndroidNotificationChannel(
+  'high_importance_channel',
+  'Notifications importantes',
+  importance: Importance.high,
+);
+
+Future<void> initNotifications() async {
+  await _localNotifications
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(_channel);
+
+  await _localNotifications.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    ),
+  );
+
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  FirebaseMessaging.onMessage.listen(_showForegroundNotification);
+}
+
+void _showForegroundNotification(RemoteMessage message) {
+  final notification = message.notification;
+  if (notification == null) return;
+
+  _localNotifications.show(
+    notification.hashCode,
+    notification.title,
+    notification.body,
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channel.id,
+        _channel.name,
+        icon: '@mipmap/ic_launcher',
+      ),
+    ),
+  );
+}
