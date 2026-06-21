@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'notifications/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/dhikr_card.dart';
+import 'widgets/abstract_background.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -67,32 +68,34 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 48),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'AUJOURD\'HUI',
-                style: Theme.of(context).textTheme.labelSmall,
+      body: AbstractBackground(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 48),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'AUJOURD\'HUI',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Rappels du cœur',
-                style: Theme.of(context).textTheme.displayLarge,
+              const SizedBox(height: 8),
+              // Padding(
+              //   padding: const EdgeInsets.symmetric(horizontal: 24),
+              //   child: Text(
+              //     'Rappels du cœur',
+              //     style: Theme.of(context).textTheme.displayLarge,
+              //   ),
+              // ),
+              const SizedBox(height: 32),
+              DhikrCard(
+                quote: data['quote'] ?? 'سبحان الله',
+                source: data['source'] ?? 'Dhikr',
               ),
-            ),
-            const SizedBox(height: 32),
-            DhikrCard(
-              quote: data['quote'] ?? 'سبحان الله',
-              source: data['source'] ?? 'Dhikr',
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

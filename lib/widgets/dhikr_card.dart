@@ -13,9 +13,12 @@ class DhikrCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: const Color(0xFFFFF8F4),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider, width: 1),
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,7 +28,7 @@ class DhikrCard extends StatelessWidget {
           Text(quote, style: Theme.of(context).textTheme.displayLarge),
           if (source != null) ...[
             const SizedBox(height: 20),
-            Container(height: 1, color: AppColors.divider),
+            Container(height: 1, color: AppColors.divider.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             Text(
               source!.toUpperCase(),
