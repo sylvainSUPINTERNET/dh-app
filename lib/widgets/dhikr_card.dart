@@ -7,9 +7,20 @@ class DhikrCard extends StatelessWidget {
 
   const DhikrCard({super.key, required this.quote, this.source});
 
+  static final _arabicTextPattern = RegExp(
+    r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
+  );
+
+  bool get _isArabicQuote => _arabicTextPattern.hasMatch(quote);
+
   @override
   Widget build(BuildContext context) {
+    final quoteTextDirection =
+        _isArabicQuote ? TextDirection.rtl : TextDirection.ltr;
+    final quoteTextAlign = _isArabicQuote ? TextAlign.right : TextAlign.left;
+
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -23,9 +34,23 @@ class DhikrCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('✦', style: TextStyle(color: AppColors.accent, fontSize: 18)),
+          const Text(
+            '✦',
+            style: TextStyle(color: AppColors.accent, fontSize: 18),
+          ),
           const SizedBox(height: 16),
-          Text(quote, style: Theme.of(context).textTheme.displayLarge),
+          Directionality(
+            textDirection: quoteTextDirection,
+            child: SizedBox(
+              width: double.infinity,
+              child: Text(
+                quote,
+                textAlign: quoteTextAlign,
+                textDirection: quoteTextDirection,
+                style: Theme.of(context).textTheme.displayLarge,
+              ),
+            ),
+          ),
           if (source != null) ...[
             const SizedBox(height: 20),
             Container(height: 1, color: AppColors.divider.withValues(alpha: 0.5)),

@@ -31,6 +31,10 @@ void main() async {
   final token = await messaging.getToken();
   debugPrint('FCM Token: $token');
 
+  messaging.onTokenRefresh.listen((newToken) {
+    debugPrint('FCM Token refreshed: $newToken');
+  });
+
   await initNotifications();
 
   Map<String, dynamic>? data;
