@@ -1,17 +1,100 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
 import 'notifications/notification_service.dart';
 import 'theme/app_theme.dart';
-import 'widgets/dhikr_card.dart';
 import 'widgets/abstract_background.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'widgets/dhikr_card.dart';
+
+const _backendBaseUrl = 'http://10.0.2.2:3000';
+const _deviceUuidPreferenceKey = 'device_uuid';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+}
+
+Future<String> _getOrCreateDeviceUuid() async {
+  final preferences = await SharedPreferences.getInstance();
+  final existingUuid = preferences.getString(_deviceUuidPreferenceKey);
+
+  if (existingUuid != null && existingUuid.isNotEmpty) {
+    return existingUuid;
+  }
+
+  final uuid = const Uuid().v4();
+  await preferences.setString(_deviceUuidPreferenceKey, uuid);
+  return uuid;
+}
+
+Future<void> _sendFcmTokenToBackend({
+  required String fcmToken,
+  required String uuid,
+  required bool isRefresh,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$_backendBaseUrl/fcm-token'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'fcmToken': fcmToken,
+        'uuid': uuid,
+        'isRefresh': isRefresh,
+      }),
+    ).timeout(const Duration(seconds: 5));
+
+    debugPrint('FCM token synced (${response.statusCode})');
+  } catch (error) {
+    debugPrint('FCM token sync failed: $error');
+  }
+}
+
+Future<void> _configureFirebaseMessaging() async {
+  try {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    final messaging = FirebaseMessaging.instance;
+    await messaging.requestPermission();
+
+    final deviceUuid = await _getOrCreateDeviceUuid();
+    debugPrint('Device UUID: $deviceUuid');
+
+    final token = await messaging.getToken().timeout(const Duration(seconds: 10));
+    debugPrint('FCM Token: $token');
+    if (token != null) {
+      unawaited(
+        _sendFcmTokenToBackend(
+          fcmToken: token,
+          uuid: deviceUuid,
+          isRefresh: false,
+        ),
+      );
+    }
+
+    messaging.onTokenRefresh.listen((newToken) {
+      debugPrint('FCM Token refreshed: $newToken');
+      unawaited(
+        _sendFcmTokenToBackend(
+          fcmToken: newToken,
+          uuid: deviceUuid,
+          isRefresh: true,
+        ),
+      );
+    });
+
+    await initNotifications();
+  } catch (error, stackTrace) {
+    debugPrint('Firebase messaging setup failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 void main() async {
@@ -21,26 +104,20 @@ void main() async {
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  await Firebase.initializeApp();
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  final messaging = FirebaseMessaging.instance;
-  await messaging.requestPermission();
-
-  final token = await messaging.getToken();
-  debugPrint('FCM Token: $token');
-
-  messaging.onTokenRefresh.listen((newToken) {
-    debugPrint('FCM Token refreshed: $newToken');
-  });
-
-  await initNotifications();
+  try {
+    await Firebase.initializeApp();
+    unawaited(_configureFirebaseMessaging());
+  } catch (error, stackTrace) {
+    debugPrint('Firebase initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 
   Map<String, dynamic>? data;
 
   try {
-    final response = await http.get(Uri.parse('http://10.0.2.2:3000'));
+    final response = await http
+        .get(Uri.parse(_backendBaseUrl))
+        .timeout(const Duration(seconds: 2));
     if (response.statusCode == 200) {
       data = jsonDecode(response.body);
     }
