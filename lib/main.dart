@@ -41,15 +41,17 @@ Future<void> _sendFcmTokenToBackend({
   required bool isRefresh,
 }) async {
   try {
-    final response = await http.post(
-      Uri.parse('$_backendBaseUrl/fcm-token'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'fcmToken': fcmToken,
-        'uuid': uuid,
-        'isRefresh': isRefresh,
-      }),
-    ).timeout(const Duration(seconds: 5));
+    final response = await http
+        .post(
+          Uri.parse('$_backendBaseUrl/fcm-token'),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'fcmToken': fcmToken,
+            'uuid': uuid,
+            'isRefresh': isRefresh,
+          }),
+        )
+        .timeout(const Duration(seconds: 5));
 
     debugPrint('FCM token synced (${response.statusCode})');
   } catch (error) {
@@ -67,7 +69,9 @@ Future<void> _configureFirebaseMessaging() async {
     final deviceUuid = await _getOrCreateDeviceUuid();
     debugPrint('Device UUID: $deviceUuid');
 
-    final token = await messaging.getToken().timeout(const Duration(seconds: 10));
+    final token = await messaging.getToken().timeout(
+      const Duration(seconds: 10),
+    );
     debugPrint('FCM Token: $token');
     if (token != null) {
       unawaited(

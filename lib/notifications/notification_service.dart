@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 final _localNotifications = FlutterLocalNotificationsPlugin();
@@ -11,7 +12,9 @@ const _channel = AndroidNotificationChannel(
 
 Future<void> initNotifications() async {
   await _localNotifications
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
       ?.createNotificationChannel(_channel);
 
   await _localNotifications.initialize(
@@ -32,6 +35,13 @@ Future<void> initNotifications() async {
 void _showForegroundNotification(RemoteMessage message) {
   final notification = message.notification;
   if (notification == null) return;
+
+  final data = message.data;
+
+  if (data['type'] == 'dhikr') {
+    debugPrint('Received dhikr notification: ${notification.title}');
+    debugPrint('Merge result: ${data['mergeResult']}');
+  }
 
   _localNotifications.show(
     notification.hashCode,
