@@ -5,11 +5,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import 'navigation/tab_navigation.dart';
 import 'notifications/notification_service.dart';
+import 'quotes_history/ui/quotes_history_tab.dart';
 import 'theme/app_theme.dart';
 import 'widgets/abstract_background.dart';
 import 'widgets/dhikr_card.dart';
@@ -104,7 +107,7 @@ Future<void> _configureFirebaseMessaging() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  //https://api.alquran.cloud/v1/ayah/1:5/editions/quran-uthmani,fr.hamidullah,ar.alafasy
+  // https://api.alquran.cloud/v1/ayah/1:5/editions/quran-uthmani,fr.hamidullah,ar.alafasy
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
@@ -127,7 +130,7 @@ void main() async {
     }
   } catch (_) {}
 
-  runApp(MyApp(data: data));
+  runApp(ProviderScope(child: MyApp(data: data)));
 }
 
 class MyApp extends StatelessWidget {
@@ -152,32 +155,109 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AbstractBackground(
-        child: SafeArea(
+    return ValueListenableBuilder<int>(
+      valueListenable: selectedTabIndex,
+      builder: (context, currentTabIndex, _) {
+        return Scaffold(
+          body: IndexedStack(
+            index: currentTabIndex,
+            children: [
+              _TodayTab(data: data),
+              const _NotificationsTab(),
+              const QuotesHistoryTab(),
+            ],
+          ),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: currentTabIndex,
+            onDestinationSelected: (index) {
+              selectedTabIndex.value = index;
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.auto_awesome_outlined),
+                selectedIcon: Icon(Icons.auto_awesome),
+                label: 'Dhikr',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.notifications_none),
+                selectedIcon: Icon(Icons.notifications),
+                label: 'Rappels',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.history),
+                selectedIcon: Icon(Icons.history),
+                label: 'Historique',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TodayTab extends StatelessWidget {
+  final Map<String, dynamic> data;
+
+  const _TodayTab({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return AbstractBackground(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 48),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'AUJOURD\'HUI',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 24),
+            //   child: Text(
+            //     'Rappels du cœur',
+            //     style: Theme.of(context).textTheme.displayLarge,
+            //   ),
+            // ),
+            const SizedBox(height: 32),
+            DhikrCard(
+              quote: data['quote'] ?? 'سبحان الله',
+              source: data['source'] ?? 'Dhikr',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationsTab extends StatelessWidget {
+  const _NotificationsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return AbstractBackground(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 48),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'AUJOURD\'HUI',
-                  style: Theme.of(context).textTheme.labelSmall,
-                ),
+              Text('RAPPELS', style: Theme.of(context).textTheme.labelSmall),
+              const SizedBox(height: 24),
+              Text(
+                'Notifications',
+                style: Theme.of(context).textTheme.displayLarge,
               ),
-              const SizedBox(height: 8),
-              // Padding(
-              //   padding: const EdgeInsets.symmetric(horizontal: 24),
-              //   child: Text(
-              //     'Rappels du cœur',
-              //     style: Theme.of(context).textTheme.displayLarge,
-              //   ),
-              // ),
-              const SizedBox(height: 32),
-              DhikrCard(
-                quote: data['quote'] ?? 'سبحان الله',
-                source: data['source'] ?? 'Dhikr',
+              const SizedBox(height: 12),
+              Text(
+                'Les rappels ouverts depuis une notification arrivent ici.',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
           ),

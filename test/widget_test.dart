@@ -1,30 +1,54 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:my_dhikr/main.dart';
+import 'package:my_dhikr/quran/data/quran_repository.dart';
+import 'package:my_dhikr/quran/models/quran_surah.dart';
+import 'package:my_dhikr/quran/providers/quran_providers.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('shows bottom navigation and opens Quran tab', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          quranRepositoryProvider.overrideWith((ref) => _FakeQuranRepository()),
+        ],
+        child: const MyApp(data: {'quote': 'سبحان الله', 'source': 'Dhikr'}),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Dhikr'), findsWidgets);
+    expect(find.text('Rappels'), findsOneWidget);
+    expect(find.text('Quran'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.text('Quran'));
+    await tester.pump();
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Lecture'), findsOneWidget);
+    expect(find.text('1. Al-Faatiha'), findsOneWidget);
+    expect(find.text('Au nom d’Allah'), findsOneWidget);
+    expect(find.text('In the name of Allah'), findsOneWidget);
   });
+}
+
+class _FakeQuranRepository extends QuranRepository {
+  @override
+  Future<QuranSurah> fetchSurah(int surahNumber) async {
+    return const QuranSurah(
+      number: 1,
+      name: 'الفاتحة',
+      englishName: 'Al-Faatiha',
+      revelationType: 'Meccan',
+      verses: [
+        Verse(
+          surahNumber: 1,
+          verseNumber: 1,
+          arabic: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+          french: 'Au nom d’Allah',
+          english: 'In the name of Allah',
+          audioUrl: 'https://example.com/001001.mp3',
+        ),
+      ],
+    );
+  }
 }

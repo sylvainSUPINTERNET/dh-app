@@ -2,6 +2,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../navigation/tab_navigation.dart';
+
 final _localNotifications = FlutterLocalNotificationsPlugin();
 
 const _channel = AndroidNotificationChannel(
@@ -11,6 +13,12 @@ const _channel = AndroidNotificationChannel(
 );
 
 Future<void> initNotifications() async {
+  final launchDetails = await _localNotifications
+      .getNotificationAppLaunchDetails();
+  if (launchDetails?.didNotificationLaunchApp ?? false) {
+    openNotificationTab();
+  }
+
   await _localNotifications
       .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
@@ -21,6 +29,7 @@ Future<void> initNotifications() async {
     const InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
     ),
+    onDidReceiveNotificationResponse: (_) => openNotificationTab(),
   );
 
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
@@ -30,6 +39,12 @@ Future<void> initNotifications() async {
   );
 
   FirebaseMessaging.onMessage.listen(_showForegroundNotification);
+  FirebaseMessaging.onMessageOpenedApp.listen((_) => openNotificationTab());
+
+  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage != null) {
+    openNotificationTab();
+  }
 }
 
 void _showForegroundNotification(RemoteMessage message) {
@@ -54,5 +69,6 @@ void _showForegroundNotification(RemoteMessage message) {
         icon: '@mipmap/ic_launcher',
       ),
     ),
+    payload: 'notification-tab',
   );
 }
